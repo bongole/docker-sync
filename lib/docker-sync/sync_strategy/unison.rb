@@ -125,10 +125,10 @@ module Docker_Sync
         end
 
         additional_docker_env = env.map{ |key,value| "-e #{key}=\"#{value}\"" }.join(' ')
-        running = `docker ps --filter 'status=running' --filter 'name=#{container_name}' | sed -E -n 's/.*\\s(.*)$/\\1/p' | grep '^#{container_name}$'`
+        running = `docker ps --filter 'status=running' --filter 'name=#{container_name}' | sed -E 's/.*[[:space:]](.*)$/\\1/p' | grep '^#{container_name}$'`
         if running == ''
           say_status 'ok', "#{container_name} container not running", :white if @options['verbose']
-          exists = `docker ps --filter "status=exited" --filter "name=#{container_name}" | sed -E -n 's/.*\\s(.*)$/\\1/p' | grep '^#{container_name}$'`
+          exists = `docker ps --filter "status=exited" --filter "name=#{container_name}" | sed -E 's/.*[[:space:]](.*)$/\\1/p' | grep '^#{container_name}$'`
           if exists == ''
             say_status 'ok', "creating #{container_name} container", :white if @options['verbose']
             run_privileged = '--privileged' if @options.key?('max_inotify_watches') #TODO: replace by the minimum capabilities required
@@ -158,7 +158,7 @@ module Docker_Sync
       end
 
       def get_host_port(container_name, container_port)
-        cmd = 'docker inspect --format=" {{ .NetworkSettings.Ports }} " ' + container_name + ' | sed -r "s/.*map\[' + container_port + '[^ ]+\s([0-9]+).*/\1/"'
+        cmd = 'docker inspect --format=" {{ .NetworkSettings.Ports }} " ' + container_name + ' | sed -E "s/.*map\[' + container_port + '[^[:space:]]+[[:space:]]([[:digit:]]+).*/\1/"'
         say_status 'command', cmd, :white if @options['verbose']
         stdout, stderr, exit_status = Open3.capture3(cmd)
         if not exit_status.success?
@@ -166,6 +166,7 @@ module Docker_Sync
           say_status 'error', "Error getting mapped port, exit code #{$?.exitstatus}", :red
           say_status 'message', stderr
         end
+
         return stdout.gsub("\n",'')
       end
 
