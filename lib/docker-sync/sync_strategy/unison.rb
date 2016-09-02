@@ -173,7 +173,7 @@ module Docker_Sync
       end
 
       def get_host_port(container_name, container_port)
-        cmd = 'docker inspect --format=" {{ .NetworkSettings.Ports }} " ' + container_name + ' | sed -E "s/.*map\[' + container_port + '[^[:space:]]+[[:space:]]([[:digit:]]+).*/\1/"'
+        cmd = %Q[ docker inspect --format '{{(index (index .NetworkSettings.Ports "#{container_port}/tcp") 0).HostPort}}' #{container_name} ]
         say_status 'command', cmd, :white if @options['verbose']
         stdout, stderr, exit_status = Open3.capture3(cmd)
         if not exit_status.success?
